@@ -30,19 +30,26 @@ class myNN(nn.Cell):
     # define the operator required
     def __init__(self, num_class=10, num_channel=3):
         super(myNN, self).__init__()
-        self.conv1 = nn.Conv2d(num_channel, 32, 5, pad_mode='valid')
-        self.conv2 = nn.Conv2d(32, 16, 5, pad_mode='valid')
-        self.fc1 = nn.Dense(400, 256, weight_init=Normal(0.02))
+        self.conv11 = nn.Conv2d(num_channel, 16, 3,pad_mode='valid')
+        self.conv12 = nn.Conv2d(16, 16, 3)
+        
+     #   self.conv21 = nn.Conv2d(16, 8, 3,pad_mode='valid')
+      #  self.conv22 = nn.Conv2d(8, 8, 3)
+        
+        self.fc1 = nn.Dense(14400, 256, weight_init=Normal(0.02))
         self.fc2 = nn.Dense(256, 64, weight_init=Normal(0.02))
         self.fc3 = nn.Dense(64, num_class, weight_init=Normal(0.02))
         self.relu = nn.ReLU()
         self.max_pool2d = nn.MaxPool2d(kernel_size=2, stride=2)
         self.flatten = nn.Flatten()
+        self.softmax = nn.Softmax()
 
     # use the preceding operators to construct networks
     def construct(self, x):
-        x = self.max_pool2d(self.relu(self.conv1(x)))
-        x = self.max_pool2d(self.relu(self.conv2(x)))
+        x = self.relu(self.conv11(x))
+        x = self.relu(self.conv12(x))
+        
+        s = self.max_pool2d(x)
         x = self.flatten(x)
         x = self.relu(self.fc1(x))
         x = self.relu(self.fc2(x))
@@ -54,7 +61,7 @@ def train_net(network_model, epoch_size, data_path, repeat_size, ckpoint_cb, sin
     """Define the training method."""
     print("============== Starting Training ==============")
     # load training dataset
-    ds_train = dm.create_dataset(os.path.join(data_path, "./MindSpore_train_images_dataset/train"), do_train=True, repeat_num=3)
+    ds_train = dm.create_dataset(os.path.join(data_path, "./MindSpore_train_images_dataset/train"), do_train=True, repeat_num=6)
     network_model.train(epoch_size, ds_train, callbacks=[ckpoint_cb, LossMonitor()], dataset_sink_mode=sink_mode)
 
 
@@ -100,5 +107,5 @@ if __name__ == "__main__":
     # group layers into an object with training and evaluation features
     model = Model(net, net_loss, net_opt, metrics={"Accuracy": Accuracy()})
 
-   # train_net(model, train_epoch, data_path, dataset_size, ckpoint, dataset_sink_mode)
+    train_net(model, train_epoch, data_path, dataset_size, ckpoint, dataset_sink_mode)
     test_net(net, model, data_path)
