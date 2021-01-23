@@ -20,6 +20,10 @@ from mindspore.nn.loss import SoftmaxCrossEntropyWithLogits
 import dataset_manager as dm
 
 
+def newest(path):
+    files = os.listdir(path)
+    paths = [os.path.join(path, basename) for basename in files if os.path.splitext(basename)[1]==".ckpt"]
+    return max(paths)
 
 class myNN(nn.Cell):
     """Lenet network structure."""
@@ -50,7 +54,7 @@ def train_net(network_model, epoch_size, data_path, repeat_size, ckpoint_cb, sin
     """Define the training method."""
     print("============== Starting Training ==============")
     # load training dataset
-    ds_train = dm.create_dataset(os.path.join(data_path, "./MindSpore_train_images_dataset/train"), True, repeat_num=2)
+    ds_train = dm.create_dataset(os.path.join(data_path, "./MindSpore_train_images_dataset/train"), do_train=True, repeat_num=3)
     network_model.train(epoch_size, ds_train, callbacks=[ckpoint_cb, LossMonitor()], dataset_sink_mode=sink_mode)
 
 
@@ -58,17 +62,19 @@ def test_net(network, network_model, data_path):
     """Define the evaluation method."""
     print("============== Starting Testing ==============")
     # load the saved model for evaluation
-    param_dict = load_checkpoint("checkpoint_lenet-2_2500.ckpt")
+    latest_file = newest(data_path)
+    print(latest_file)
+    param_dict = load_checkpoint(latest_file)
     # load parameter to the network
     load_param_into_net(network, param_dict)
     # load testing dataset
-    ds_eval = dm.create_dataset(os.path.join(data_path, "./MindSpore_train_images_dataset/test"), False)
+    ds_eval = dm.create_dataset(os.path.join(data_path, "./MindSpore_train_images_dataset/test"), do_train=False)
     acc = network_model.eval(ds_eval, dataset_sink_mode=False)
     print("============== Accuracy:{} ==============".format(acc))
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='MindSpore LeNet Example')
+    parser = argparse.ArgumentParser(description='Team GJPT')
     parser.add_argument('--device_target', type=str, default="CPU", choices=['Ascend', 'GPU', 'CPU'],
                         help='device where the code will be implemented (default: CPU)')
     args = parser.parse_args()
@@ -83,7 +89,7 @@ if __name__ == "__main__":
 
     # define the loss function
     net_loss = SoftmaxCrossEntropyWithLogits(sparse=True, reduction='mean')
-    train_epoch = 2
+    train_epoch = 1
     # create the network
     net = myNN()
     # define the optimizer
@@ -94,5 +100,5 @@ if __name__ == "__main__":
     # group layers into an object with training and evaluation features
     model = Model(net, net_loss, net_opt, metrics={"Accuracy": Accuracy()})
 
-    train_net(model, train_epoch, data_path, dataset_size, ckpoint, dataset_sink_mode)
+   # train_net(model, train_epoch, data_path, dataset_size, ckpoint, dataset_sink_mode)
     test_net(net, model, data_path)
