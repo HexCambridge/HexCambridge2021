@@ -15,6 +15,8 @@ import mindspore.dataset as ds
 import mindspore.dataset.vision.c_transforms as C
 import mindspore.dataset.transforms.c_transforms as C2
 from mindspore.communication.management import init, get_rank, get_group_size
+import multiprocessing
+
 
 def unzipfile(gzip_path):
     """unzip dataset file
@@ -32,7 +34,7 @@ def unzipfile(gzip_path):
 def create_dataset(dataset_path, do_train, repeat_num=1, batch_size=32, target="CPU"):
 
 
-    data_set = ds.Cifar10Dataset(dataset_path, num_parallel_workers=8, shuffle=True)
+    data_set = ds.Cifar10Dataset(dataset_path, num_parallel_workers=multiprocessing.cpu_count(), shuffle=True)
 
 
     # define map operations
@@ -50,8 +52,8 @@ def create_dataset(dataset_path, do_train, repeat_num=1, batch_size=32, target="
 
     type_cast_op = C2.TypeCast(mstype.int32)
 
-    data_set = data_set.map(operations=type_cast_op, input_columns="label", num_parallel_workers=8)
-    data_set = data_set.map(operations=trans, input_columns="image", num_parallel_workers=8)
+    data_set = data_set.map(operations=type_cast_op, input_columns="label", num_parallel_workers=multiprocessing.cpu_count())
+    data_set = data_set.map(operations=trans, input_columns="image", num_parallel_workers=multiprocessing.cpu_count())
 
     # apply batch operations
     data_set = data_set.batch(batch_size, drop_remainder=False)
