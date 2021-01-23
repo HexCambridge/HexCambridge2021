@@ -21,18 +21,16 @@ import dataset_manager as dm
 
 
 
-class LeNet5(nn.Cell):
+class myNN(nn.Cell):
     """Lenet network structure."""
     # define the operator required
     def __init__(self, num_class=10, num_channel=3):
-        super(LeNet5, self).__init__()
-        self.conv1 = nn.Conv2d(num_channel, 1, 5, pad_mode='valid')
-        self.conv2 = nn.Conv2d(1, 16, 5, pad_mode='valid')
-        self.conv3 = nn.Conv2d(16, 6, 5, pad_mode='valid')
-        self.conv4 = nn.Conv2d(6, 16, 5, pad_mode='valid')
-        self.fc1 = nn.Dense(44944, 120, weight_init=Normal(0.02))
-        self.fc2 = nn.Dense(120, 84, weight_init=Normal(0.02))
-        self.fc3 = nn.Dense(84, num_class, weight_init=Normal(0.02))
+        super(myNN, self).__init__()
+        self.conv1 = nn.Conv2d(num_channel, 16, 5, pad_mode='valid')
+        self.conv2 = nn.Conv2d(16, 16, 5, pad_mode='valid')
+        self.fc1 = nn.Dense(400, 64, weight_init=Normal(0.02))
+        self.fc2 = nn.Dense(64, 32, weight_init=Normal(0.02))
+        self.fc3 = nn.Dense(32, num_class, weight_init=Normal(0.02))
         self.relu = nn.ReLU()
         self.max_pool2d = nn.MaxPool2d(kernel_size=2, stride=2)
         self.flatten = nn.Flatten()
@@ -52,7 +50,7 @@ def train_net(network_model, epoch_size, data_path, repeat_size, ckpoint_cb, sin
     """Define the training method."""
     print("============== Starting Training ==============")
     # load training dataset
-    ds_train = dm.create_dataset(data_path, 32, repeat_size)
+    ds_train = dm.create_dataset(os.path.join(data_path, "./MindSpore_train_images_dataset/train"), 32, repeat_size)
     network_model.train(epoch_size, ds_train, callbacks=[ckpoint_cb, LossMonitor()], dataset_sink_mode=sink_mode)
 
 
@@ -60,11 +58,11 @@ def test_net(network, network_model, data_path):
     """Define the evaluation method."""
     print("============== Starting Testing ==============")
     # load the saved model for evaluation
-    param_dict = load_checkpoint("checkpoint_lenet-1_1875.ckpt")
+    param_dict = load_checkpoint("checkpoint_lenet-1_1250.ckpt")
     # load parameter to the network
     load_param_into_net(network, param_dict)
     # load testing dataset
-    ds_eval = dm.create_dataset(data_path, False)
+    ds_eval = dm.create_dataset(os.path.join(data_path, "./MindSpore_train_images_dataset/test"), False)
     acc = network_model.eval(ds_eval, dataset_sink_mode=False)
     print("============== Accuracy:{} ==============".format(acc))
 
@@ -77,7 +75,7 @@ if __name__ == "__main__":
     context.set_context(mode=context.GRAPH_MODE, device_target=args.device_target)
     dataset_sink_mode = not args.device_target == "CPU"
     
-    data_path = "C:/Users/Johanan/OneDrive/Documents/HexCambridge/Project/MindSpore_train_images_dataset"
+    data_path = os.getcwd()
     # learning rate setting
     lr = 0.01
     momentum = 0.9
@@ -87,14 +85,14 @@ if __name__ == "__main__":
     net_loss = SoftmaxCrossEntropyWithLogits(sparse=True, reduction='mean')
     train_epoch = 1
     # create the network
-    net = LeNet5()
+    net = myNN()
     # define the optimizer
     net_opt = nn.Momentum(net.trainable_params(), lr, momentum)
-    config_ck = CheckpointConfig(save_checkpoint_steps=1875, keep_checkpoint_max=10)
+    config_ck = CheckpointConfig(save_checkpoint_steps=5,keep_checkpoint_max=2)
     # save the network model and parameters for subsequence fine-tuning
-    ckpoint = ModelCheckpoint(prefix="checkpoint_lenet", config=config_ck)
+    ckpoint = ModelCheckpoint(prefix="checkpoint_lenet", config=config_ck,directory=data_path)
     # group layers into an object with training and evaluation features
     model = Model(net, net_loss, net_opt, metrics={"Accuracy": Accuracy()})
 
-    #train_net(model, train_epoch, data_path, dataset_size, ckpoint, dataset_sink_mode)
+    train_net(model, train_epoch, data_path, dataset_size, ckpoint, dataset_sink_mode)
     test_net(net, model, data_path)

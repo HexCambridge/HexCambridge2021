@@ -28,22 +28,8 @@ import mindspore.dataset.vision.c_transforms as C
 import mindspore.dataset.transforms.c_transforms as C2
 from mindspore.communication.management import init, get_rank, get_group_size
 
-def _get_rank_info():
-    """
-    get rank size and rank id
-    """
-    rank_size = int(os.environ.get("RANK_SIZE", 1))
 
-    if rank_size > 1:
-        rank_size = get_group_size()
-        rank_id = get_rank()
-    else:
-        rank_size = 1
-        rank_id = 0
-
-    return rank_size, rank_id
-
-def create_dataset(dataset_path, do_train, repeat_num=1, batch_size=32, target="Ascend", distribute=False):
+def create_dataset(dataset_path, do_train, repeat_num=1, batch_size=32, target="CPU", distribute=False):
     """
     create a train or evaluate cifar10 dataset for resnet50
     Args:
@@ -57,15 +43,13 @@ def create_dataset(dataset_path, do_train, repeat_num=1, batch_size=32, target="
     Returns:
         dataset
     """
-    if target == "Ascend":
-        device_num, rank_id = _get_rank_info()
+
+    if distribute:
+        init()
+        rank_id = get_rank()
+        device_num = get_group_size()
     else:
-        if distribute:
-            init()
-            rank_id = get_rank()
-            device_num = get_group_size()
-        else:
-            device_num = 1
+        device_num = 1
     if device_num == 1:
         data_set = ds.Cifar10Dataset(dataset_path, num_parallel_workers=8, shuffle=True)
     else:
@@ -76,12 +60,11 @@ def create_dataset(dataset_path, do_train, repeat_num=1, batch_size=32, target="
     trans = []
     if do_train:
         trans += [
-            C.RandomCrop((32, 32), (4, 4, 4, 4)),
             C.RandomHorizontalFlip(prob=0.5)
         ]
 
     trans += [
-        C.Resize((224, 224)),
+        C.Resize((32, 32)),
         C.Rescale(1.0 / 255.0, 0.0),
         C.Normalize([0.4914, 0.4822, 0.4465], [0.2023, 0.1994, 0.2010]),
         C.HWC2CHW()
