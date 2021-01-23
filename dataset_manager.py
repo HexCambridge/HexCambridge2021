@@ -10,6 +10,11 @@ import sys
 import requests
 from urllib.parse import urlparse
 import gzip
+import mindspore.common.dtype as mstype
+import mindspore.dataset as ds
+import mindspore.dataset.vision.c_transforms as C
+import mindspore.dataset.transforms.c_transforms as C2
+from mindspore.communication.management import init, get_rank, get_group_size
 
 def unzipfile(gzip_path):
     """unzip dataset file
@@ -21,12 +26,7 @@ def unzipfile(gzip_path):
     open_file.write(gz_file.read())
     gz_file.close()
 
-import os
-import mindspore.common.dtype as mstype
-import mindspore.dataset as ds
-import mindspore.dataset.vision.c_transforms as C
-import mindspore.dataset.transforms.c_transforms as C2
-from mindspore.communication.management import init, get_rank, get_group_size
+
 
 
 def create_dataset(dataset_path, do_train, repeat_num=1, batch_size=32, target="CPU", distribute=False):
