@@ -18,3 +18,6 @@ After the model has finished running, the outputs are:
 
 
 Evaluation
+----------
+
+We were successful in making a neural network to classify the images accurately within the data set.
