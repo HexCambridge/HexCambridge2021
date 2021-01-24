@@ -23,39 +23,35 @@ class myNN(nn.Cell):
     def __init__(self, num_class=10, num_channel=3,count=0):
         super(myNN, self).__init__()
         self.conv1 = nn.Conv2d(num_channel, 16, 5,pad_mode='valid')
-        self.conv2 = nn.Conv2d(16, 8, 5)
+        self.conv2 = nn.Conv2d(16, 32, 5)
         
-        self.fc1 = nn.Dense(968, 256, weight_init=Normal(0.02))
-        self.fc2 = nn.Dense(256, 64, weight_init=Normal(0.02))
+        self.fc1 = nn.Dense(3872, 128, weight_init=Normal(0.02))
+        self.fc2 = nn.Dense(128, 64, weight_init=Normal(0.02))
         self.fc3 = nn.Dense(64, num_class, weight_init=Normal(0.02))
         
         self.relu = nn.ReLU()
         self.max_pool2d = nn.MaxPool2d(kernel_size=2, stride=2)
         self.flatten = nn.Flatten()
+        self.dropout = nn.Dropout(keep_prob=0.9)
 
     # use the preceding operators to construct networks
     def construct(self, x):
         x = self.max_pool2d(self.relu(self.conv1(x)))
         x = self.max_pool2d(self.relu(self.conv2(x)))
+        x = self.dropout(x)
         
         x = self.flatten(x)
         x = self.relu(self.fc1(x))
         x = self.relu(self.fc2(x))
         x = self.fc3(x)
         return x
-    
-
-
-def classify(image):
-    label = model(image)
-    return label
 
 
 def train_net(network_model, epoch_size, data_path, repeat_size, ckpoint_cb, sink_mode):
     """Define the training method."""
     print("============== Starting Training ==============")
     # load training dataset
-    ds_train = dm.create_dataset(os.path.join(data_path, "./MindSpore_train_images_dataset/train"), do_train=True, repeat_num=3)
+    ds_train = dm.create_dataset(os.path.join(data_path, "./MindSpore_train_images_dataset/train"), do_train=True, repeat_num=1)
     network_model.train(epoch_size, ds_train, callbacks=[ckpoint_cb, LossMonitor()], dataset_sink_mode=sink_mode)
 
 
@@ -73,4 +69,5 @@ def test_net(network, network_model, data_path):
     acc = network_model.eval(ds_eval, dataset_sink_mode=False)
     print("============== Accuracy:{} ==============".format(acc))
 
+    
 

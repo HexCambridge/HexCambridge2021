@@ -10,11 +10,14 @@ import neuralnet_test
 from mindspore.nn.metrics import Accuracy
 from mindspore.nn.loss import SoftmaxCrossEntropyWithLogits
 from mindspore.train.callback import ModelCheckpoint, CheckpointConfig
-from mindspore import  Model
+from mindspore import  Model, context
 import mindspore.nn as nn
+import resnet
+
 
 if __name__ == "__main__":
-    
+    context.set_context(mode=context.PYNATIVE_MODE, device_target="CPU")
+
     data_path = os.getcwd()
     # learning rate setting
     lr = 0.01
@@ -32,9 +35,9 @@ if __name__ == "__main__":
     net_opt = nn.Momentum(net.trainable_params(), lr, momentum)
     config_ck = CheckpointConfig(save_checkpoint_steps=5,keep_checkpoint_max=2)
     # save the network model and parameters for subsequence fine-tuning
-    ckpoint = ModelCheckpoint(prefix="checkpoint_lenet", config=config_ck,directory=data_path)
+    ckpoint = ModelCheckpoint(prefix="checkpoint", config=config_ck,directory=data_path)
     
     model = Model(net, net_loss, net_opt, metrics={"Accuracy": Accuracy()})
     
-   # neuralnet_test.train_net(model, train_epoch, data_path, dataset_size, ckpoint, sink_mode=True)
+    #neuralnet_test.train_net(model, train_epoch, data_path, dataset_size, ckpoint, sink_mode=True)
     neuralnet_test.test_net(net, model, data_path)

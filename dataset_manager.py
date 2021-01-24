@@ -20,7 +20,7 @@ def create_dataset(dataset_path, do_train, repeat_num=1, batch_size=32, target="
     trans = []
     if do_train:
         trans += [
-            C.RandomCrop((32,32),(4,4,4,4)),
+            C.RandomCrop((32, 32), (4, 4, 4, 4)),
             C.RandomHorizontalFlip(prob=0.5)
         ]
 
